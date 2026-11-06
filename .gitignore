@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+config.local.json
+data/stream_info.json
+tokens.json
+.venv/
+assets/music/*
+!assets/music/README.md
+data/goal.json
+launcher_choice.json
+Stream Launcher.exe

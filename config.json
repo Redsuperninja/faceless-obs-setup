@@ -1,0 +1,107 @@
+{
+  "obs": {
+    "host": "localhost",
+    "port": 4455,
+    "vertical_canvas": "Aitum Vertical"
+  },
+  "channel": {
+    "name": "Your Channel",
+    "handle": "@yourhandle",
+    "twitch_name": "yourtwitchname",
+    "tagline": "Your tagline here",
+    "title": "YOUR SHOW"
+  },
+  "style": {
+    "font": "Georgia",
+    "background": "#0E0E10",
+    "accent": "#D5D9E3",
+    "text": "#FFFFFF",
+    "dim": 0.5,
+    "accent2": "#F5921E",
+    "accent3": "#7E8496",
+    "edge_lines": "none"
+  },
+  "overlays": {
+    "alerts_url": "http://localhost:8765/overlay",
+    "chat_url": "http://localhost:8765/",
+    "event_list_url": ""
+  },
+  "media": {
+    "music_file": "",
+    "background_file": "",
+    "avatar_image": "",
+    "music_dir": "assets/music"
+  },
+  "layouts": {
+    "horizontal": {
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "profile": "Faceless Twitch",
+      "collection": "Faceless Twitch",
+      "bitrate": 6000
+    },
+    "vertical": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "profile": "Faceless TikTok Vertical",
+      "collection": "Faceless TikTok Vertical",
+      "bitrate": 4500
+    }
+  },
+  "chat": {
+    "port": 8765,
+    "title": "",
+    "vertical_alpha": 0.35,
+    "vertical_font_px": 34
+  },
+  "fonts": {
+    "title": "double_struck",
+    "chat": "small_caps",
+    "alerts": "fraktur"
+  },
+  "commands": {
+    "guild": {
+      "title": "Welcome to the guild",
+      "text": "Say hi in chat, follow, and meet your fellow adventurers.",
+      "cooldown": 30
+    },
+    "socials": {
+      "title": "Find the guild",
+      "text": "@yourhandle on Twitch and YouTube",
+      "cooldown": 30
+    },
+    "rules": {
+      "title": "Guild rules",
+      "text": "Be kind. No spam. No spoilers. Have fun, adventurer.",
+      "cooldown": 45
+    },
+    "music": {
+      "title": "Now playing",
+      "text": "Royalty-free fantasy and synth tracks. Ask in chat for the list.",
+      "cooldown": 45
+    },
+    "lurk": {
+      "title": "Safe travels",
+      "text": "Thanks for lurking, adventurer. Enjoy the stream!",
+      "cooldown": 20
+    }
+  },
+  "deco": {
+    "title": "YOUR SHOW"
+  },
+  "goal_bar": {
+    "gems": false
+  },
+  "nameplate": {
+    "gems": false
+  },
+  "output": {
+    "encoder": "amd"
+  },
+  "transition": {
+    "name": "Fade",
+    "duration_ms": 500
+  }
+}

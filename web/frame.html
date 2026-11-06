@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Frame</title>
+<style>
+  /* Ornate frames for the OBS scenes. Settings arrive in the address (?a=...&t=...).
+     m=ring (default): double-line border, corner flourishes, gems, optional title and fill
+     m=bar: one moving gradient bar    m=edges: moving lines along the top and bottom */
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  svg { position: absolute; inset: 0; display: block; }
+  .bar { position: absolute; inset: 0; background: linear-gradient(90deg, var(--c), var(--a), var(--b), var(--a), var(--c)); background-size: 300% 100%; animation: slide 9s linear infinite; }
+  @keyframes slide { to { background-position: -300% 0; } }
+  /* m=text: a heading in shimmering metal. Georgia first, then fonts that have the fancy letters. */
+  #txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; white-space: nowrap;
+         font-family: Georgia, "Cambria Math", "Segoe UI Symbol", serif; font-weight: bold; letter-spacing: .06em;
+         background: linear-gradient(90deg, var(--a), #fff, var(--b), var(--a)); background-size: 300% 100%;
+         -webkit-background-clip: text; background-clip: text; color: transparent;
+         animation: slide 8s linear infinite; filter: drop-shadow(0 2px 3px #000) drop-shadow(0 0 6px #000); }
+  .barv { position: absolute; top: 0; bottom: 0; width: var(--t); background: linear-gradient(180deg, var(--c), var(--a), var(--b), var(--a), var(--c)); background-size: 100% 300%; animation: slidev 9s linear infinite; }
+  @keyframes slidev { to { background-position: 0 -300%; } }
+  #edgeLeft { left: 0; }
+  #edgeRight { right: 0; }
+  #edgeTop { bottom: auto; height: var(--t); }
+  #edgeBottom { top: auto; height: var(--t); }
+</style>
+</head>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  const W = innerWidth, H = innerHeight;
+  const A = q.get("a") || "#D5D9E3";   // light metal
+  const B = q.get("b") || "#F5921E";   // gems and glints
+  const C = q.get("c") || "#7E8496";   // dark metal
+  const t = parseFloat(q.get("t") || "8");
+  const mode = q.get("m") || "ring";
+  const root = document.documentElement.style;
+  root.setProperty("--a", A); root.setProperty("--b", B); root.setProperty("--c", C); root.setProperty("--t", t + "px");
+
+  if (mode === "text") {
+    const d = document.createElement("div");
+    d.id = "txt";
+    d.textContent = q.get("title") || "";  // textContent, never HTML
+    d.style.fontSize = (q.get("size") || "64") + "px";
+    document.body.appendChild(d);
+  } else if (mode === "bar") {
+    document.body.insertAdjacentHTML("beforeend", '<div class="bar"></div>');
+  } else if (mode === "edges") {
+    // ?sides=all adds the left and right lines too (default: top and bottom only)
+    const sides = q.get("sides") === "all" ? '<div id="edgeLeft" class="barv"></div><div id="edgeRight" class="barv"></div>' : "";
+    document.body.insertAdjacentHTML("beforeend", '<div id="edgeTop" class="bar"></div><div id="edgeBottom" class="bar"></div>' + sides);
+  } else {
+    drawFrame();
+  }
+
+  function drawFrame() {
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (tag, attrs, parent, text) => {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      if (text !== undefined) e.textContent = text;  // textContent, never HTML
+      if (parent) parent.appendChild(e);
+      return e;
+    };
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}` }, document.body);
+    const defs = el("defs", {}, svg);
+    const grad = (id, attrs, stops) => {
+      const g = el("linearGradient", { id, ...attrs }, defs);
+      stops.forEach(([o, c, op]) => el("stop", { offset: o, "stop-color": c, "stop-opacity": op ?? 1 }, g));
+      return g;
+    };
+    // Brushed-metal look: light and dark bands across the width.
+    grad("metal", { gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: W, y2: 0 },
+         [[0, C], [.2, A], [.4, C], [.6, A], [.8, C], [1, A]]);
+    // A bright glint that slides along the metal.
+    const glint = grad("glint", { gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: W, y2: 0 },
+         [[0, "#fff", 0], [.5, "#FFE2B0", 1], [1, "#fff", 0]]);
+    grad("gem", { x1: 0, y1: 0, x2: 0, y2: 1 }, [[0, "#FFD9A0"], [.45, B], [1, "#7A3F05"]]);
+    grad("fill", { x1: 0, y1: 0, x2: 0, y2: 1 }, [[0, q.get("f1") || "#1B1D2B"], [1, q.get("f2") || "#0B0C12"]]);
+
+    const o = 1.5, i = Math.max(3, t * 0.72);
+    const fa = parseFloat(q.get("fa") || "0");
+    if (fa > 0) el("rect", { x: o, y: o, width: W - 2 * o, height: H - 2 * o, fill: "url(#fill)", "fill-opacity": fa }, svg);
+
+    // The line art lives in one group, drawn twice: once in metal, once in the moving glint.
+    const art = el("g", { id: "art", fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" }, defs);
+    el("rect", { x: o, y: o, width: W - 2 * o, height: H - 2 * o, "stroke-width": 2.4 }, art);
+    el("rect", { x: i, y: i, width: W - 2 * i, height: H - 2 * i, "stroke-width": 1.7 }, art);
+    const s = Math.max(20, Math.min(110, Math.min(W, H) * 0.27));
+    [[0, 0, 1, 1], [W, 0, -1, 1], [0, H, 1, -1], [W, H, -1, -1]].forEach(([x, y, sx, sy]) => {
+      const g = el("g", { transform: `translate(${x} ${y}) scale(${sx} ${sy})` }, art);
+      el("path", { d: `M${o} ${s} V${o + s * .22} Q${o} ${o} ${o + s * .22} ${o} H${s}`, "stroke-width": Math.max(3, t * .6) }, g);
+      el("path", { d: `M${i} ${s * .62} C${i + s * .08} ${s * .3} ${s * .3} ${i + s * .08} ${s * .62} ${i}`, "stroke-width": 2 }, g);
+      el("path", { d: `M${i + s * .12} ${i + s * .34} q${s * .1} ${-s * .04} ${s * .12} ${-s * .14} q${-s * .1} ${s * .0} ${-s * .12} ${s * .14}`, "stroke-width": 1.6 }, g);
+    });
+    el("use", { href: "#art", stroke: "url(#metal)" }, svg);
+    const glintUse = el("use", { href: "#art", stroke: "url(#glint)", "stroke-width": 1 }, svg);
+
+    // Gems: a large one top and bottom centre, small ones beside it, and on the side middles.
+    const diamond = (cx, cy, r) => el("polygon", {
+      points: `${cx},${cy - r * 1.25} ${cx + r},${cy} ${cx},${cy + r * 1.25} ${cx - r},${cy}`,
+      fill: "url(#gem)", stroke: A, "stroke-width": 1 }, svg);
+    const gr = Math.max(6, t * 1.1);
+    const gy = gr * 1.3 + 1;
+    if (q.get("gems") !== "0") {  // ?gems=0 leaves the diamonds off (the goal bar looks better without them)
+      [gy, H - gy].forEach(cy => {
+        diamond(W / 2, cy, gr);
+        if (W > gr * 14) [-1, 1].forEach(k => diamond(W / 2 + k * gr * 3.4, cy, gr * .42));
+      });
+      if (H > 160) [-1, 1].forEach(k => diamond(k < 0 ? o + 1 : W - o - 1, H / 2, gr * .5));
+    }
+
+    // Title: small-caps text between two flourish lines, like the tabs in the reference.
+    const title = q.get("title"), th = parseFloat(q.get("th") || "0");
+    if (title && th > 0) {
+      const cy = t + th / 2 + gr * 0.5, avail = W * 0.9 - t * 2;
+      const label = el("text", { x: W / 2, y: cy, "text-anchor": "middle", "dominant-baseline": "central",
+                   "font-family": "Georgia, 'Times New Roman', serif", "font-size": th * 0.55, "font-weight": "bold",
+                   "letter-spacing": th * 0.04, fill: "#F4F1EA", stroke: "#000", "stroke-width": 0.8,
+                   "paint-order": "stroke" }, svg, title);
+      // Measure the real text and shrink it only as much as needed to fit (never below 11px).
+      let size = th * 0.55, tw = label.getBBox().width;
+      if (tw > avail) {
+        size = Math.max(11, size * avail / tw);
+        label.setAttribute("font-size", size); label.setAttribute("letter-spacing", size * 0.07);
+        tw = label.getBBox().width;
+      }
+      // Flourish lines on both sides, only if there is room left for them.
+      const gap = tw / 2 + size * 0.7, room = W / 2 - gap - t * 2.5, L = Math.min(W * 0.16, 90, room);
+      if (L > 14) [-1, 1].forEach(k => {
+        const x1 = W / 2 + k * gap, x2 = W / 2 + k * (gap + L);
+        el("line", { x1, y1: cy, x2, y2: cy, stroke: "url(#metal)", "stroke-width": 1.8 }, svg);
+        diamond(x2, cy, size * .22);
+      });
+    }
+
+    // Slide the glint along the metal, then pause.
+    setInterval(() => {
+      const p = ((Date.now() / 6500) % 1.7) - 0.35;
+      const stops = glint.querySelectorAll("stop");
+      [p - 0.12, p, p + 0.12].forEach((v, n) => stops[n].setAttribute("offset", Math.min(1, Math.max(0, v))));
+    }, 50);
+  }
+</script>
+</body>
+</html>

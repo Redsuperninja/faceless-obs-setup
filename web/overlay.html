@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Alerts and commands</title>
+<style>
+  /* Full-canvas transparent page: alert and command cards slide in at the top, one at a time. */
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  .card {
+    position: fixed; top: 7%; left: 50%; box-sizing: border-box; min-width: 560px; max-width: 1200px;
+    padding: 38px 64px 40px; text-align: center; color: #F4F1EA;
+    font-family: Georgia, "Cambria Math", "Segoe UI Symbol", serif;
+    opacity: 0; transform: translate(-50%, -40px); transition: opacity .5s, transform .5s;
+  }
+  .card.in { opacity: 1; transform: translate(-50%, 0); }
+  .card iframe { position: absolute; inset: 0; z-index: -1; border: 0; pointer-events: none; background: transparent; }
+  .title { font-size: 54px; font-weight: bold; letter-spacing: .06em; color: var(--b, #F5921E);
+           text-shadow: 0 2px 4px #000, 0 0 10px #000; }
+  .text { margin-top: 10px; font-size: 32px; text-shadow: 0 2px 4px #000; }
+</style>
+</head>
+<body>
+<script>
+  // ?live=1 on the feed means: only events from now on (never replay old alerts).
+  // Page address options: ?x=0.5 centres the cards at half the width; ?sound=0 is silent; ?v=0.8 is the volume.
+  const opts = new URLSearchParams(location.search);
+  let style = {};
+  fetch("/style.json").then(r => r.json()).then(s => { style = s; document.documentElement.style.setProperty("--b", s.accent2 || "#F5921E"); }).catch(() => {});
+
+  const queue = [];
+  let busy = false;
+  const pause = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function show(ev) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const title = document.createElement("div"); title.className = "title"; title.textContent = ev.title || "";
+    const text = document.createElement("div"); text.className = "text"; text.textContent = ev.text || "";
+    card.append(title, text);  // textContent everywhere: chat text can never inject HTML
+    document.body.append(card);
+    // Frame it once we know how big the text made the card.
+    const f = document.createElement("iframe");
+    const q = new URLSearchParams({ a: style.accent || "#D5D9E3", b: style.accent2 || "#F5921E", c: style.accent3 || "#7E8496",
+                                    t: 10, fa: 0.92, f1: "#1B1D2B", f2: "#0B0C12" });
+    f.width = card.offsetWidth; f.height = card.offsetHeight; f.src = "/frame.html?" + q;
+    card.append(f);
+    const cx = parseFloat(opts.get("x") || style.alert_x);
+    if (cx) card.style.left = (cx * 100) + "%";  // centre over the main area, not the sidebar
+    if (ev.sound && opts.get("sound") !== "0") {
+      const a = new Audio("/sounds/" + encodeURIComponent(ev.sound));
+      const v = parseFloat(opts.get("v"));  // a typo in the address must not stop the card showing
+      a.volume = Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.8;
+      a.play().catch(() => {});  // no sound is fine; the card still shows
+    }
+    await pause(50);
+    card.classList.add("in");
+    await pause(ev.type === "alert" ? 7000 : 9000);
+    card.classList.remove("in");
+    await pause(700);
+    card.remove();
+  }
+
+  async function pump() {
+    if (busy) return;
+    busy = true;
+    while (queue.length) await show(queue.shift());
+    busy = false;
+  }
+
+  new EventSource("/events?live=1").onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    // Cap the backlog so spam can't hold the screen for minutes: commands wait only briefly, alerts a bit longer.
+    const limit = ev.type === "alert" ? 6 : 2;
+    if ((ev.type === "alert" || ev.type === "command") && queue.filter(x => x.type === ev.type).length < limit) {
+      queue.push(ev); pump();
+    }
+  };
+</script>
+</body>
+</html>

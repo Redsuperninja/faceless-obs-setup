@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Background music</title>
+</head>
+<body>
+<script>
+  // Plays the tracks in ?f=a.mp3|b.mp3 from the folder ?d=... in shuffled order, forever.
+  // ?v=0.35 is the volume (0 to 1). OBS sends this page's sound to its audio mixer.
+  const q = new URLSearchParams(location.search);
+  const files = (q.get("f") || "").split("|").filter(Boolean);
+  const base = q.get("d") || "";
+  const audio = new Audio();
+  audio.volume = Math.min(1, Math.max(0, parseFloat(q.get("v") || "0.35")));
+  let order = [], at = 0;
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function next() {
+    if (!files.length) return;
+    if (at >= order.length) { order = shuffle(files.slice()); at = 0; }
+    audio.src = new URL(encodeURIComponent(order[at++]), base).href;
+    audio.play().catch(() => setTimeout(next, 2000));  // a bad file is skipped, not fatal
+  }
+  audio.addEventListener("ended", next);
+  audio.addEventListener("error", () => setTimeout(next, 1000));
+  next();
+</script>
+</body>
+</html>

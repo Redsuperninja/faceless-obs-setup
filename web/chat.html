@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Combined chat</title>
+<style>
+  html, body { margin: 0; background: rgba(0,0,0,0); overflow: hidden; height: 100%; }
+  body.solid { background: #18181b; }
+  body { font-family: Arial, sans-serif; font-size: 22px; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; }
+  .m { padding: 4px 8px; text-shadow: 0 0 4px #000, 0 0 2px #000; word-wrap: break-word; }
+  /* Official Twitch and YouTube logos, downloaded into assets/logos/ (see the README there). */
+  .b { display: inline-block; width: 1em; height: 1em; margin-right: 6px; vertical-align: -0.12em; background-size: contain; background-position: center; background-repeat: no-repeat; }
+  .twitch .b { background-image: url(/logos/twitch.svg); }
+  .youtube .b { background-image: url(/logos/youtube.svg); }
+  .u { font-weight: bold; margin-right: 6px; }
+</style>
+</head>
+<body>
+<script>
+  // ?max=30 sets how many messages stay on screen.
+  const q = new URLSearchParams(location.search);
+  const max = parseInt(q.get("max") || "30", 10);
+  if (q.get("bg")) document.body.classList.add("solid");  // ?bg=1 for the OBS dock (solid dark background)
+  if (q.get("size")) document.body.style.fontSize = parseInt(q.get("size"), 10) + "px";  // ?size=34 for the vertical layout
+  const add = (m) => {
+    const row = document.createElement("div");
+    row.className = "m " + m.platform;
+    const badge = document.createElement("span");
+    badge.className = "b";
+    badge.title = m.platform;
+    const user = document.createElement("span");
+    user.className = "u";
+    user.style.color = m.color || "#ddd";
+    user.textContent = m.user;
+    const text = document.createElement("span");
+    text.textContent = m.text;  // textContent, so chat can never inject HTML
+    row.append(badge, user, text);
+    document.body.append(row);
+    while (document.body.children.length > max) document.body.firstChild.remove();
+  };
+  // Alerts and commands share the feed; this page only shows real chat lines.
+  new EventSource("/events").onmessage = (e) => { const m = JSON.parse(e.data); if (!m.type) add(m); };
+</script>
+</body>
+</html>
